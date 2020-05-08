@@ -1,0 +1,41 @@
+%matplotlib inline
+from matplotlib import pyplot as plt 
+import cv2
+import numpy as np
+
+img= cv2.imread('/content/drive/My Drive/Python/stop-sign.jpg',1)
+imgBlur= cv2.GaussianBlur(img,(9,9),1)
+hsv = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)
+
+lower_red = np.array([0, 158, 118])
+upper_red = np.array([179, 255, 255])   
+    
+thresh = cv2.inRange(hsv,lower_red, upper_red)
+kernel = np.ones((5,5),np.uint8)
+mask = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+result = cv2.bitwise_and(img, img, mask = mask)
+edged = cv2.Canny(result, 30, 200) 
+contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+maxh=0
+maxw=0
+vitrix=0
+vitriy=0
+for cnt in contours:
+  area=cv2.contourArea(cnt)
+  peri=cv2.arcLength(cnt,True)
+  approx=cv2.approxPolyDP(cnt,0.02*peri,True)
+  x,y,w,h=cv2.boundingRect(approx)
+  if(w>maxw):
+    maxw=w
+    vitrix=x
+  if(h>maxh):
+    maxh=h
+    vitriy=y
+
+cv2.rectangle(img,(vitrix-10,vitriy-10),(vitrix+maxw+10,vitriy+maxh+10),(0,255,0),5)
+subimg=img[vitriy-20:vitriy+maxh+20,vitrix-20:vitrix+maxw+20]
+#img = cv2.putText(img, 'OpenCV', (vitrix,vitriy), cv2.FONT_HERSHEY_SIMPLEX,2, (0,0,255), 2, cv2.LINE_AA) 
+imgrgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+plt.imshow(imgrgb)
+plt.show()
